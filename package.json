@@ -1,10 +1,9 @@
 {
-	"name": "helloworld-sample",
-	"displayName": "helloworld-sample",
-	"description": "HelloWorld example for VS Code",
+	"name": "class-fold",
+	"displayName": "Class Fold",
+	"description": "Folding utility for class names.",
 	"version": "0.0.1",
-	"publisher": "vscode-samples",
-	"repository": "https://github.com/Microsoft/vscode-extension-samples/helloworld-sample",
+	"repository": "https://github.com/vantaboard/class-fold",
 	"engines": {
 		"vscode": "^1.74.0"
 	},
@@ -20,8 +19,8 @@
 	"contributes": {
 		"commands": [
 			{
-				"command": "extension.helloWorld",
-				"title": "Hello World"
+				"command": "class-fold.printSymbols",
+				"title": "Print Symbols"
 			}
 		]
 	},
