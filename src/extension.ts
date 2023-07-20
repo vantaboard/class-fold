@@ -12,13 +12,16 @@ import {
     commands,
     languages,
     window,
+    workspace,
 } from 'vscode';
 import * as fs from 'fs';
 
 const baseRegex =
-    /(ATTR)=(([`'"]).+?(?=([`'"])[\s\\>])([`'"]))|(ATTR)=(([\\[\\{]).+?(?=[\]\\}][\s\\>])([\]\\}]))/;
+    // eslint-disable-next-line no-useless-escape
+    /(ATTR)=(([`'"]).+?(?=([`'"])[\s\\>])([`'"]))|(ATTR)=(([\\[\\{]).+?(?=[\]\\}]\s?\/\>)([\]\\}]))/;
 
 let isUnfolding = false;
+let isEditing = false;
 
 const regexen = {
     class: new RegExp(
@@ -88,6 +91,43 @@ const groupedDecorators = {
     style: getDecorators(icons.style),
 };
 
+export function activate(context: ExtensionContext) {
+    const { subscriptions } = context;
+
+    const disposables = (['class', 'style'] as const).flatMap((type) => [
+        languages.registerFoldingRangeProvider(
+            validLangs,
+            new ClassFoldingRangeProvider(type),
+        ),
+        workspace.onDidChangeTextDocument((event) => {
+            if (!validLangs.includes(event.document.languageId)) {
+                return;
+            }
+
+            isEditing = true;
+            setTimeout(() => {
+                isEditing = false;
+            }, 10);
+        }),
+        window.onDidChangeActiveTextEditor(async (editor) => {
+            if (!editor) {
+                return;
+            }
+
+            if (!validLangs.includes(editor.document.languageId)) {
+                return;
+            }
+
+            isUnfolding = true;
+            await commands.executeCommand('editor.unfoldAll');
+            isUnfolding = false;
+        }),
+        window.onDidChangeTextEditorSelection(selectionHandler(type)),
+    ]);
+
+    subscriptions.push(...disposables);
+}
+
 class ClassFoldingRangeProvider implements FoldingRangeProvider {
     private regex: RegExp;
 
@@ -114,35 +154,12 @@ class ClassFoldingRangeProvider implements FoldingRangeProvider {
     }
 }
 
-export function activate(context: ExtensionContext) {
-    const { subscriptions } = context;
-
-    const disposables = (['class', 'style'] as const).flatMap((type) => [
-        languages.registerFoldingRangeProvider(
-            validLangs,
-            new ClassFoldingRangeProvider(type),
-        ),
-        window.onDidChangeActiveTextEditor(async (editor) => {
-            if (!editor) {
-                return;
-            }
-
-            if (!validLangs.includes(editor.document.languageId)) {
-                return;
-            }
-
-            isUnfolding = true;
-            await commands.executeCommand('editor.unfoldAll');
-            isUnfolding = false;
-        }),
-        window.onDidChangeTextEditorSelection(selectionHandler(type)),
-    ]);
-
-    subscriptions.push(...disposables);
-}
-
 function selectionHandler(type: 'class' | 'style') {
-    return async function(event: TextEditorSelectionChangeEvent) {
+    return async function (event: TextEditorSelectionChangeEvent) {
+        if (isEditing) {
+            return;
+        }
+
         await new Promise<void>((resolve) => {
             const interval = setInterval(() => {
                 if (!isUnfolding) {
@@ -183,10 +200,11 @@ function selectionHandler(type: 'class' | 'style') {
             if (!selection) {
                 decoratedRanges[
                     foldable
-                        ? (`folded${editor.document.lineAt(end.line).text.match(/\/>/)
-                                ? 'End'
-                                : ''
-                            }` as DecoratorType)
+                        ? (`folded${
+                              editor.document.lineAt(end.line).text.match(/\/>/)
+                                  ? 'End'
+                                  : ''
+                          }` as DecoratorType)
                         : 'hidden'
                 ].add(range);
 
