@@ -3,6 +3,7 @@
 	"displayName": "Class Fold",
 	"description": "Folding utility for class names.",
 	"version": "0.0.1",
+    "license": "MIT",
 	"repository": "https://github.com/vantaboard/class-fold",
 	"engines": {
 		"vscode": "^1.74.0"
@@ -16,14 +17,6 @@
 		"onLanguage:html"
 	],
 	"main": "./out/extension.js",
-	"contributes": {
-		"commands": [
-			{
-				"command": "class-fold.printSymbols",
-				"title": "Print Symbols"
-			}
-		]
-	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
 		"compile": "tsc -p ./",
@@ -37,5 +30,6 @@
 		"@typescript-eslint/parser": "^5.42.0",
 		"eslint": "^8.26.0",
 		"typescript": "^5.1.3"
-	}
+	},
+	"dependencies": {}
 }
